@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Cache-Control" content="no-cache">
+  <title>非公式EXPO2025脱出ゲーム</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css?v3" />
+  <link rel="stylesheet" href="map.css?v3" />
+
+  <!-- JS（順番重要） -->
+  <script src="timeEngine.js?v1"></script>
+  <script src="quizzes.js?v1"></script>
+  <script src="marker.js?v1"></script>
+  <script src="pavilion-data.js?v1"></script>
+  <script src="story.js?v1"></script>
+  <script src="mapEngine.js?v1"></script>
+  <script src="quizEngine.js?v1"></script>
+
+  <!-- Google tag -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-VCHEJ575KM"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-VCHEJ575KM');
+  </script>
+</head>
+
+<body>
+ 
+  <!-- ★ ステータスバー（最上部固定） -->
+  <div id="status-bar">
+    <span id="game-time">🕒 9:00</span>
+  </div>
+
+  <!-- 暗幕 -->
+  <div id="screen-dim"></div>
+
+  <!-- ★ 中央寄せのラッパー（ここにクイズやタイトルを入れる） -->
+  <div id="page-wrapper">
+
+    <h2>🧩 非公式EXPO2025脱出ゲーム</h2>
+
+    <!-- クイズ -->
+    <div id="quiz-container"></div>
+
+    <!-- スタンプ帳 -->
+    <div class="stamp" style="display: none;">
+      <h3>📖 スタンプ帳</h3>
+      <ul id="stamp-list"></ul>
+      <button onclick="resetProgress()">リセット</button>
+    </div>
+
+  </div>
+
+  <!-- ストーリー吹き出し -->
+  <div id="story-box" class="speech-bubble" style="display: none;">
+    <p id="story-text"></p>
+    <button id="next-button">▶ 次へ</button>
+  </div>
+
+  <!-- 地図 -->
+  <div id="map" class="map-hidden"></div>
+
+  <!-- 地図下 UI -->
+  <div id="map-ui" class="map-ui-hidden">
+    <div id="map-ui-text"></div>
+    <button id="map-ui-yes">選択</button>
+    <button id="map-ui-no">キャンセル</button>
+    <div id="map-ui-result"></div>
+  </div>
+
+</body>
+</html>
