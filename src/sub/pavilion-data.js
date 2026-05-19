@@ -102,7 +102,7 @@ window.pavilionList.push(
   { code: 'S06', name: 'バルト館（ラトビア・リトアニア）', lat: 34.65000, lng: 135.38104, flag: '🇱🇻🇱🇹', bookable: true, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' },
   { code: 'S07', name: 'EUパビリオン', lat: 34.64993, lng: 135.38092, flag: '🇪🇺', bookable: true, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' },
   { code: 'S08', name: 'ベルギー館', lat: 34.65004, lng: 135.38069, flag: '🇧🇪', bookable: true, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' },
-  { code: 'S09It', name: 'イタリア館', lat: 34.64968, lng: 135.38063, flag: '🇮🇹', bookable: true, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' },,
+  { code: 'S09It', name: 'イタリア館', lat: 34.64968, lng: 135.38063, flag: '🇮🇹', bookable: true, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' },
   { code: 'S11', name: 'シンガポール館', lat: 34.64911, lng: 135.38027, flag: '🇸🇬', bookable: true, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' },
   { code: 'S12', name: 'ブルガリア館', lat: 34.64895, lng: 135.38039, flag: '🇧🇬', bookable: true, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' },
   { code: 'S13', name: 'オランダ館', lat: 34.64878, lng: 135.38049, flag: '🇳🇱', bookable: true, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' },
