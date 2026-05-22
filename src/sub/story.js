@@ -79,7 +79,7 @@ function showRestartButton() {
 window.showBadEndingStory = function() {
   const pages = [
     "21:00になってしまった…",
-    "爆発音は聞こえない。愉快犯だったのか… <p>調査のため電車は長時間運休し、多くの万博民が帰宅困難となり万博会場で夜を過ごすこととなった…",
+    "閉館時間なので退館お願いします。また来てね。",
     "BAD END"
   ];
 
