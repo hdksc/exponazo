@@ -9,7 +9,7 @@ body {
   line-height: 1.6;
   color: #333;
   margin: 0;
-  padding-top: 60px; /* ← ステータスバー35px + 余白25px */
+  padding-top: 76px; /* ← 2段ステータスバー + 余白 */
 }
 
 /* 中央寄せのラッパー（元の body の役割） */
@@ -88,6 +88,23 @@ button:hover {
   background: #0077b6;
 }
 
+button:disabled {
+  background: #bdbdbd;
+  color: #666666;
+  cursor: not-allowed;
+}
+
+button:disabled:hover {
+  background: #bdbdbd;
+}
+
+.final-error-msg {
+  margin-top: 8px;
+  color: #c1121f;
+  font-weight: bold;
+  text-align: center;
+}
+
 .result {
   margin-top: 10px;
   font-weight: bold;
@@ -138,7 +155,7 @@ button:hover {
 
 #story-box {
   position: fixed;
-  bottom: 10%;
+  bottom: 8%;
   left: 50%;
   transform: translateX(-50%);
   background: #ffffff;
@@ -147,6 +164,7 @@ button:hover {
   padding: 16px 20px;
   width: 70%;
   max-width: 800px;
+  box-sizing: border-box;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   z-index: 1950;
 }
@@ -161,9 +179,52 @@ button:hover {
   border-color: #ffffff transparent transparent transparent;
 }
 
+#story-characters {
+  display: none;
+  margin: 0 auto 12px;
+  max-width: 100%;
+}
+
+#story-image {
+  display: none;
+  max-width: 100%;
+  width: auto;
+  max-height: 42vh;
+  height: auto;
+  margin: 0 auto 12px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
 #story-text {
   font-size: 1.1em;
   margin-bottom: 10px;
+}
+
+@media (max-width: 600px) {
+  #story-box {
+    width: 90%;
+    bottom: 5%;
+    padding: 14px 16px;
+  }
+
+  #story-characters {
+    gap: 8px;
+  }
+
+  #story-characters .title-main {
+    width: 96px;
+  }
+
+  #story-characters .title-sub,
+  #story-characters .title-sub canvas {
+    width: 64px;
+    height: 64px;
+  }
+
+  #story-image {
+    max-height: 36vh;
+  }
 }
 
 #next-button {
@@ -194,14 +255,100 @@ button:hover {
   top: 0;
   left: 0;
   width: 100%;
-  height: 35px; /* ← ひでの要望どおり */
+  min-height: 54px;
+  height: auto;
+  gap: 2px;
   background: #003566;
   color: white;
   padding: 6px 12px;
-  font-size: 17px;
+  box-sizing: border-box;
+  font-size: 16px;
   z-index: 2000;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+#game-title {
+  font-weight: bold;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+#game-keywords {
+  font-size: 14px;
+  line-height: 1.35;
+  word-break: break-word;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+@keyframes keywordFlash {
+  0% {
+    text-shadow: 0 0 6px #ffffff, 0 0 14px #fff700, 0 0 26px #00e5ff;
+    filter: brightness(2) drop-shadow(0 0 8px #ffffff);
+    transform: scale(1.25);
+    background-color: rgba(255, 255, 255, 0.38);
+  }
+  35% {
+    text-shadow: 0 0 10px #ffffff, 0 0 20px #ffd700, 0 0 30px #00e5ff;
+    filter: brightness(1.7) drop-shadow(0 0 6px #ffd700);
+    transform: scale(1.15);
+    background-color: rgba(255, 255, 255, 0.22);
+  }
+  100% {
+    text-shadow: none;
+    filter: none;
+    transform: scale(1);
+    background-color: transparent;
+  }
+}
+
+.header-kw {
+  display: inline-block;
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.header-kw.kw-flash {
+  animation: keywordFlash 1.2s ease-out forwards;
+}
+
+#final-preview {
+  background: #f0f8ff;
+  border: 1px solid #b8dff2;
+  border-radius: 8px;
+  padding: 12px;
+  color: #333;
+  font-size: 1.05em;
+  line-height: 1.6;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.hidden-shirushi {
+  -webkit-user-select: text;
+  user-select: text;
+  color: var(--hidden-bg-color, transparent);
+}
+
+.hidden-shirushi.is-revealed {
+  color: var(--hidden-selected-color, #000000);
+}
+
+@media (max-width: 600px) {
+  #status-bar {
+    padding: 6px 10px;
+  }
+
+  #game-title {
+    font-size: 14px;
+  }
+
+  #game-keywords {
+    font-size: 13px;
+  }
 }
 
 #status-bar.hidden {
@@ -287,4 +434,75 @@ button:hover {
   font-size: 14px;
   color: #555;
   margin-top: 5px;
+}
+
+/* === 修正対象ファイル: style.css === */
+/* 修正: ヒントボタン関連 */
+
+.hint-button {
+  margin-bottom: 12px;
+}
+
+/* ヒント終了時 */
+.hint-button:disabled {
+  background: #bdbdbd;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.hint-box p {
+  color: #0068B7;   /* こみゃくの瞳と同じ青 */
+  margin: 4px 0;
+}
+
+/* === 修正対象ファイル: style.css === */
+/* 修正: タイトルエリアとこみゃく Canvas 用スタイルを追加 */
+
+/* -----------------------------------------
+   タイトルエリア全体
+----------------------------------------- */
+
+/* タイトル文字 */
+.game-title {
+  font-size: 1.6rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+/* ミャクミャク＋こみゃくの横並び */
+.title-images {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ミャクミャク PNG */
+.title-main {
+  width: 120px;
+  height: auto;
+}
+
+/* こみゃく Canvas を入れる枠 */
+.title-sub {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* こみゃく Canvas 自体 */
+.title-sub canvas {
+  width: 80px;
+  height: 80px;
+  background-color: transparent !important;
+  image-rendering: pixelated; /* こみゃくの丸が綺麗に見える */
+}
+
+#title-area {
+  position: relative;
+  z-index: 1950; /* 暗幕より前、ステータスバーより後ろ */
+  text-align: center;
+  margin-top: 20px;
 }

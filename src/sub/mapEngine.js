@@ -81,18 +81,36 @@ window.mapEngine = (() => {
   // -----------------------------------------
   // パビリオンマーカー追加
   // -----------------------------------------
+  const FEATURED_PAVILION_LABELS = {
+    S09It: "イタリア館",
+    P11: "アメリカ館",
+    S22: "イギリス館",
+    P28: "中国館",
+    P12: "フランス館"
+  };
+
   function addPavilionMarkers(map) {
     if (!window.pavilionList) return;
 
     window.pavilionList.forEach(p => {
       const [y, x] = latLng2yx(p.lat, p.lng);
+      const markerKey = p.id || p.code;
 
       const marker = L.marker([y, x], {
         icon: createPavilionIcon('red')
       }).addTo(map);
 
       marker.bindPopup(`<strong>${p.name}</strong>`);
-      window.pavilionMarkers[p.code] = marker;
+      if (FEATURED_PAVILION_LABELS[markerKey] && typeof marker.bindTooltip === "function") {
+        marker.bindTooltip(FEATURED_PAVILION_LABELS[markerKey], {
+          permanent: true,
+          interactive: true,
+          direction: "top",
+          offset: [0, -6],
+          className: "pavilion-label-tooltip"
+        });
+      }
+      window.pavilionMarkers[markerKey] = marker;
     });
   }
 
@@ -106,11 +124,59 @@ window.mapEngine = (() => {
   }
 
   // -----------------------------------------
+  // 地図とヘッダー・問題パネルの配置同期
+  // -----------------------------------------
+  function updateMapLayout() {
+    const statusBar = document.getElementById("status-bar");
+    const headerPanel = document.getElementById("map-header-panel");
+    const mapEl = document.getElementById("map");
+    if (!mapEl) return;
+
+    const statusHeight = statusBar ? statusBar.offsetHeight : 0;
+    let panelHeight = 0;
+
+    if (headerPanel && !headerPanel.classList.contains("map-header-hidden")) {
+      headerPanel.style.top = `${statusHeight}px`;
+      panelHeight = headerPanel.offsetHeight;
+    }
+
+    const mapTop = statusHeight + panelHeight;
+    mapEl.style.top = `${mapTop}px`;
+    mapEl.style.height = `calc(100vh - ${mapTop}px)`;
+
+    if (map) {
+      map.invalidateSize();
+    }
+  }
+
+  window.addEventListener("resize", () => {
+    const mapEl = document.getElementById("map");
+    if (mapEl && mapEl.classList.contains("visible")) {
+      updateMapLayout();
+    }
+  });
+
+  // -----------------------------------------
   // 地図をフェードイン表示
   // -----------------------------------------
   function showMap() {
+    const headerPanel = document.getElementById("map-header-panel");
+    if (headerPanel) {
+      headerPanel.classList.remove("map-header-hidden");
+    }
+
+    if (typeof window.applyHiddenCharColor === "function") {
+      window.applyHiddenCharColor(document.getElementById("map-analysis-keywords"));
+    }
+
     initMap();
+    updateMapLayout();
     document.getElementById("map").classList.add("visible");
+
+    setTimeout(updateMapLayout, 80);
+    setTimeout(() => {
+      if (map) map.invalidateSize();
+    }, 650);
   }
 
   // -----------------------------------------
@@ -120,20 +186,70 @@ window.mapEngine = (() => {
   function hideMap() {
     document.getElementById("map").classList.remove("visible");
 
+    const headerPanel = document.getElementById("map-header-panel");
+    if (headerPanel) {
+      headerPanel.classList.add("map-header-hidden");
+    }
+
+    const hintBtn = document.getElementById("map-hint-btn");
+    if (hintBtn) {
+      hintBtn.style.display = "none";
+      hintBtn.disabled = false;
+      hintBtn.textContent = "ヒントを見る";
+      hintBtn.onclick = null;
+    }
+
+    const hintBox = document.getElementById("map-hint-box");
+    if (hintBox) {
+      hintBox.innerHTML = "";
+    }
+
+    const selectAllBtn = document.getElementById("select-all-keywords-btn");
+    if (selectAllBtn) {
+      selectAllBtn.style.display = "none";
+      selectAllBtn.onclick = null;
+    }
+
+    const cancelBtn = document.getElementById("map-cancel-btn");
+    if (cancelBtn) {
+      cancelBtn.onclick = null;
+    }
+
+    if (typeof window.getSelection === "function") {
+      const sel = window.getSelection();
+      if (sel) sel.removeAllRanges();
+    }
+    if (typeof window.updateHiddenMarksRevealState === "function") {
+      window.updateHiddenMarksRevealState();
+    }
+
+    const feedbackEl = document.getElementById("map-prompt-feedback");
+    if (feedbackEl) {
+      feedbackEl.textContent = "";
+    }
+
     // ★ 地図 UI のイベント解除（今回のバグの根本対策）
     const ui = document.getElementById("map-ui");
     const uiYes = document.getElementById("map-ui-yes");
     const uiNo = document.getElementById("map-ui-no");
+    const uiText = document.getElementById("map-ui-text");
+    const uiResult = document.getElementById("map-ui-result");
 
     ui.classList.remove("show");
+    if (uiText) {
+      uiText.innerHTML = "";
+    }
+    if (uiResult) {
+      uiResult.textContent = "";
+    }
 
     // イベント解除
     uiYes.replaceWith(uiYes.cloneNode(true));
     uiNo.replaceWith(uiNo.cloneNode(true));
     Object.values(window.pavilionMarkers).forEach(marker => {
-  marker.off("click");
-});
-
+      marker.off("click");
+      marker.closePopup();
+    });
   }
 
   // -----------------------------------------
@@ -143,6 +259,7 @@ window.mapEngine = (() => {
     initMap,
     showMap,
     hideMap,
+    updateMapLayout,
     latLng2yx
   };
 

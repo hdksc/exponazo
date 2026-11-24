@@ -1,9 +1,161 @@
+#map-header-panel {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  background: #f0f8ff;
+  border-bottom: 2px solid #0077b6;
+  padding: 10px 14px;
+  z-index: 1001;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  max-height: 48vh;
+  overflow-y: auto;
+}
+
+#map-header-panel.map-header-hidden {
+  display: none;
+}
+
+.map-prompt-title {
+  font-weight: bold;
+  color: #0077b6;
+  font-size: 1.05em;
+  margin-bottom: 2px;
+}
+
+.map-prompt-desc {
+  font-size: 0.9em;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.map-prompt-analysis-label {
+  font-weight: bold;
+  font-size: 0.9em;
+  color: #003566;
+}
+
+#map-analysis-keywords {
+  background: #ffffff;
+  border: 1px solid #b8dff2;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin: 4px 0;
+  font-size: 1em;
+  font-weight: bold;
+  color: #000000;
+  word-break: break-word;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.map-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 6px;
+}
+
+#map-hint-box {
+  margin: 4px 0;
+}
+
+#map-hint-box:empty {
+  display: none;
+}
+
+#map-hint-box p {
+  margin: 3px 0;
+  font-size: 0.88em;
+  line-height: 1.4;
+  color: #0068B7;
+  font-weight: bold;
+}
+
+#map-hint-btn,
+#select-all-keywords-btn,
+#map-cancel-btn {
+  display: inline-block;
+  width: auto;
+  margin: 0;
+  padding: 6px 14px;
+  font-size: 0.9em;
+  color: #ffffff;
+  border-radius: 6px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#map-hint-btn {
+  background: #00aaff;
+}
+
+#map-hint-btn:hover {
+  background: #0077b6;
+}
+
+#map-hint-btn:disabled,
+#map-hint-btn:disabled:hover {
+  background: #bdbdbd;
+  color: #666666;
+}
+
+#select-all-keywords-btn {
+  background: #0077b6;
+}
+
+#select-all-keywords-btn:hover {
+  background: #005f8a;
+}
+
+#map-cancel-btn {
+  background: #6c757d;
+}
+
+#map-cancel-btn:hover {
+  background: #495057;
+}
+
+.leaflet-tooltip.pavilion-label-tooltip {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1.5px solid #0077b6;
+  border-radius: 6px;
+  color: #003566;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+
+.leaflet-tooltip-top.pavilion-label-tooltip::before {
+  border-top-color: #0077b6;
+}
+
+.map-prompt-instruction {
+  font-size: 0.9em;
+  font-weight: bold;
+  color: #0077b6;
+}
+
+#map-prompt-feedback {
+  color: #c1121f;
+  font-weight: bold;
+  font-size: 0.9em;
+  margin-top: 4px;
+}
+
+#map-prompt-feedback:empty {
+  display: none;
+}
+
 #map {
   position: fixed;
-  top: 35px; /* ← ステータスバーの高さに合わせる */
+  top: 56px;
   left: 0;
   width: 100%;
-  height: calc(100vh - 35px); /* ← その分だけ縮める */
+  height: calc(100vh - 56px);
   opacity: 0;
   transition: opacity 0.6s ease;
   pointer-events: none;
@@ -19,16 +171,67 @@
   position: fixed;
   bottom: 0;
   left: 0;
-  right: 0;     /* ← これが重要 */
-  width: auto;  /* ← 100% をやめる */
-  height: 90vh;
-  background: rgba(255,255,255,0.95);
+  right: 0;
+  width: auto;
+  height: auto;
+  max-height: 45vh;
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.97);
   border-top: 3px solid #0077b6;
-  padding: 20px;
-  z-index: 1000;
+  padding: 16px 20px;
+  z-index: 1050;
   display: none;
+  box-sizing: border-box;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
 }
 
 #map-ui.show {
   display: block;
+}
+
+.map-selected-place {
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #003566;
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+.map-ui-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.map-ui-buttons button {
+  margin-top: 0;
+  flex: 1;
+}
+
+#map-ui-no {
+  background: #6c757d;
+}
+
+#map-ui-no:hover {
+  background: #495057;
+}
+
+@media (max-width: 600px) {
+  #map-header-panel {
+    padding: 8px 10px;
+  }
+
+  .map-prompt-title {
+    font-size: 0.98em;
+  }
+
+  .map-prompt-desc,
+  .map-prompt-analysis-label,
+  .map-prompt-instruction {
+    font-size: 0.85em;
+  }
+
+  #map-analysis-keywords {
+    font-size: 0.92em;
+    padding: 5px 8px;
+  }
 }

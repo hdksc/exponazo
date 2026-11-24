@@ -1,9 +1,95 @@
 // ===============================
 // quizEngine.js
-// クイズ生成・回答処理・スタンプ管理（アーカイブ探索仕様）
+// クイズ生成・回答処理・スタンプ管理
 // ===============================
 
+
+let previousHeaderKeywords = {};
+
+function resetHeaderKeywordState() {
+  previousHeaderKeywords = {};
+  const keywordList = document.getElementById("game-keywords");
+  if (keywordList) {
+    keywordList.innerHTML = "";
+  }
+}
+
+function getGameFlags() {
+  if (!window.gameState) {
+    window.gameState = { loop: 1, flags: {}, answers: {}, hints: {} };
+  }
+  return window.gameState.flags;
+}
+
+function getGameAnswers() {
+  if (!window.gameState) {
+    window.gameState = { loop: 1, flags: {}, answers: {}, hints: {} };
+  }
+  return window.gameState.answers;
+}
+
+function getCurrentGameLoop() {
+  return window.gameState && window.gameState.loop ? window.gameState.loop : 1;
+}
+
+// ===============================
+// 一問目〜七問目の正答判定（周回考慮）
+// ===============================
+function isQuizAnsweredCorrectly(quiz, currentLoop) {
+  const answers = getGameAnswers();
+  const ans = answers[quiz.id];
+  if (!ans) return false;
+
+  if (quiz.id === "q1") {
+    const loop1Idx = Array.isArray(quiz.options)
+      ? quiz.options.indexOf("両腕をあげる")
+      : 0;
+    const expectedIndex = currentLoop === 1
+      ? (loop1Idx >= 0 ? loop1Idx : 0)
+      : quiz.correctIndex;
+    return ans.type === "choice" && ans.selectedIndex === expectedIndex;
+  }
+
+  if (quiz.options && quiz.options.length > 0) {
+    return ans.type === "choice" && ans.selectedIndex === quiz.correctIndex;
+  }
+
+  if (quiz.correctAnswer !== undefined) {
+    const userVal = String(ans.value || "").trim().toUpperCase();
+    const expectedVal = String(quiz.correctAnswer || "").trim().toUpperCase();
+    return ans.type === "text" && userVal === expectedVal;
+  }
+
+  return false;
+}
+
+function areAllMainQuizzesCorrect() {
+  const currentLoop = getCurrentGameLoop();
+  const targetIds = ["q1", "q2", "q3", "q4", "q5", "q6", "q7"];
+  return targetIds.every(id => {
+    const q = quizData.find(item => item.id === id);
+    return q ? isQuizAnsweredCorrectly(q, currentLoop) : false;
+  });
+}
+
+function updateFinalButtonState() {
+  const mapBtn = document.getElementById("final-map-btn");
+  const errorMsg = document.getElementById("final-error-msg");
+  if (!mapBtn) return;
+
+  const allCorrect = areAllMainQuizzesCorrect();
+  mapBtn.disabled = !allCorrect;
+  if (errorMsg) {
+    errorMsg.style.display = allCorrect ? "none" : "block";
+  }
+}
+
+window.updateFinalButtonState = updateFinalButtonState;
+
+
+// ===============================
 // クイズ開始
+// ===============================
 function startGame() {
   const container = document.getElementById("quiz-container");
   container.innerHTML = "";
@@ -19,6 +105,7 @@ function startGame() {
     catDiv.appendChild(title);
 
     const questions = quizData.filter(q => q.category === cat);
+
     questions.forEach(q => {
       const qElem = createQuizElement(q);
       catDiv.appendChild(qElem);
@@ -26,316 +113,751 @@ function startGame() {
 
     container.appendChild(catDiv);
   });
+
+  updateStamp();
+  updateFinalButtonState();
 }
+
 
 // ===============================
 // クイズ要素生成
 // ===============================
 function createQuizElement(quiz) {
+  const flags = getGameFlags();
+  const answers = getGameAnswers();
+
   const container = document.createElement("div");
   container.className = "quiz-block";
   container.id = `quiz-${quiz.id}`;
 
+  // -----------------------------------------
+  // 問題タイトル
+  // -----------------------------------------
   const title = document.createElement("div");
   title.className = "question-title";
   title.textContent = quiz.title;
   container.appendChild(title);
 
-  // ★ innerHTMLでHTMLタグ（色指定や改行）を許可
+  // -----------------------------------------
+  // 質問文（HTML対応）
+  // -----------------------------------------
   const question = document.createElement("div");
   question.className = "question-text";
-  question.innerHTML = quiz.question; 
+  question.innerHTML = quiz.question;
   container.appendChild(question);
 
+  // -----------------------------------------
+  // ヒントエリア
+  // -----------------------------------------
+  const hintBox = document.createElement("div");
+  hintBox.className = "hint-box";
+  container.appendChild(hintBox);
+
+  const hintBtn = document.createElement("button");
+  hintBtn.className = "hint-button";
+  hintBtn.style.display = "none";
+  hintBtn.textContent = "ヒントを見る";
+  container.appendChild(hintBtn);
+
+  setupHintsForQuiz(quiz, hintBox, hintBtn);
+
+  // -----------------------------------------
+  // 結果表示
+  // -----------------------------------------
   const result = document.createElement("div");
   result.className = "result";
+
 
   // -----------------------------------------
   // 地図選択式クイズ
   // -----------------------------------------
   if (quiz.mapQuestion) {
     const mapBtn = document.createElement("button");
+    mapBtn.id = "final-map-btn";
     mapBtn.textContent = "地図で選ぶ";
 
-    // const listBtn = document.createElement("button");
-    // listBtn.textContent = "名前で選ぶ";
+    const errorMsg = document.createElement("div");
+    errorMsg.id = "final-error-msg";
+    errorMsg.className = "final-error-msg";
+    errorMsg.textContent = "どこか間違ってるよ";
 
     container.appendChild(mapBtn);
-    //container.appendChild(listBtn);
+    container.appendChild(errorMsg);
     container.appendChild(result);
 
-    mapBtn.onclick = () => showMapSelection(quiz, result, container);
-    // listBtn.onclick = () => showNameSelection(quiz, result, container);
+    if (flags[quiz.id]) {
+      result.innerHTML = `取得キーワード：<strong>${flags[quiz.id]}</strong>`;
+    }
+
+    mapBtn.onclick = () => {
+      if (mapBtn.disabled || !areAllMainQuizzesCorrect()) return;
+      showMapSelection(quiz, result, container);
+    };
 
     return container;
   }
+
 
   // -----------------------------------------
   // 4択クイズ
   // -----------------------------------------
   if (quiz.options && quiz.options.length > 0) {
+    const savedAns = answers[quiz.id];
+
     const optionsWrapper = document.createElement("div");
     optionsWrapper.className = "options-wrapper";
 
     quiz.options.forEach((opt, idx) => {
+
       const label = document.createElement("label");
+
       const radio = document.createElement("input");
       radio.type = "radio";
       radio.name = quiz.id;
       radio.value = idx;
+      if (savedAns && savedAns.type === "choice" && savedAns.selectedIndex === idx) {
+        radio.checked = true;
+      }
 
       label.appendChild(radio);
-      
-      // ★ 選択肢のHTMLタグ（色など）を反映させる
+
+      // 選択肢のHTMLタグ（色など）を反映
       const span = document.createElement("span");
       span.innerHTML = opt;
       label.appendChild(span);
-      
+
       optionsWrapper.appendChild(label);
     });
+
+    if (flags[quiz.id]) {
+      result.innerHTML = `取得キーワード：<strong>${flags[quiz.id]}</strong>`;
+    }
+
     container.appendChild(optionsWrapper);
     container.appendChild(result);
 
     const btn = document.createElement("button");
     btn.textContent = "回答する";
+
     btn.onclick = () => {
-      const selected = container.querySelector("input[type=radio]:checked");
+
+      const selected =
+        container.querySelector("input[type=radio]:checked");
+
       if (!selected) return;
-      const selectedIdx = parseInt(selected.value);
 
-      if (typeof advanceTime === "function") advanceTime();
+      const selectedIdx = parseInt(selected.value, 10);
 
-      const isCorrect = (selectedIdx === quiz.correctIndex);
-      
-      // ★ 配列マッピングがあればそれを使用。なければ正誤で分岐
-      let displayKeyword = "";
-      if (quiz.keywords && quiz.keywords[selectedIdx]) {
-        displayKeyword = quiz.keywords[selectedIdx];
-      } else {
-        displayKeyword = isCorrect ? quiz.flag : (quiz.dummyFlag || "???");
+      if (typeof advanceTime === "function") {
+        advanceTime();
       }
 
-      // 無機質なフィードバック
-      result.innerHTML = `取得キーワード：<strong>${displayKeyword}</strong>`;
+      const currentLoop = getCurrentGameLoop();
+      let isCorrect = (selectedIdx === quiz.correctIndex);
+      if (quiz.id === "q1") {
+        const loop1Idx = quiz.options.indexOf("両腕をあげる");
+        const expectedIdx = currentLoop === 1
+          ? (loop1Idx >= 0 ? loop1Idx : 0)
+          : quiz.correctIndex;
+        isCorrect = (selectedIdx === expectedIdx);
+      }
 
-      // ★ 正解・不正解にかかわらずプレイヤーが選んだルートのキーワードを記録・進行させる
-      localStorage.setItem(`flag_${quiz.id}`, displayKeyword);
-      updateStamp();
+      answers[quiz.id] = {
+        type: "choice",
+        selectedIndex: selectedIdx
+      };
+
+
+      // -----------------------------------------
+      // キーワード決定
+      // -----------------------------------------
+      let displayKeyword = "";
+
+      // 選択肢ごとのキーワードが定義されている場合
+      if (
+        quiz.keywords &&
+        quiz.keywords[selectedIdx] !== undefined
+      ) {
+        displayKeyword = quiz.keywords[selectedIdx];
+
+      } else {
+
+        // 定義されていない場合は正誤で決定
+        displayKeyword =
+          isCorrect
+            ? quiz.flag
+            : (quiz.dummyFlag || "???");
+      }
+
+
+      // -----------------------------------------
+      // 結果表示
+      // -----------------------------------------
+      result.innerHTML =
+        `取得キーワード：<strong>${displayKeyword}</strong>`;
+
+
+      // -----------------------------------------
+      // 選択したキーワードをメモリに保持
+      // -----------------------------------------
+      flags[quiz.id] = displayKeyword;
+
+
+      // -----------------------------------------
+      // 各種表示を更新
+      // -----------------------------------------
+      updateStamp(quiz.id);
+      updateFinalButtonState();
       unlockNext(quiz);
     };
+
     container.appendChild(btn);
 
     return container;
   }
 
+
   // -----------------------------------------
   // 記述式クイズ
   // -----------------------------------------
+  const savedAns = answers[quiz.id];
   const input = document.createElement("input");
+
   input.type = "text";
   input.className = "text-input";
   input.placeholder = "答えを入力";
-  container.appendChild(input);
+  if (savedAns && savedAns.type === "text") {
+    input.value = savedAns.value || "";
+  }
 
+  if (flags[quiz.id]) {
+    result.innerHTML = `取得キーワード：<strong>${flags[quiz.id]}</strong>`;
+  }
+
+  container.appendChild(input);
   container.appendChild(result);
 
   const btn = document.createElement("button");
   btn.textContent = "回答する";
+
   btn.onclick = () => {
-    if (typeof advanceTime === "function") advanceTime();
-    
-    // ★ 大文字に統一して判定（半角/全角のブレや小文字入力に対応）
-    const userAnswer = input.value.trim().toUpperCase();
-    const isCorrect = (userAnswer === (quiz.correctAnswer || "").toUpperCase());
 
-    const displayKeyword = isCorrect ? quiz.flag : (quiz.dummyFlag || "不明");
-    
-    result.innerHTML = `取得キーワード：<strong>${displayKeyword}</strong>`;
+    if (typeof advanceTime === "function") {
+      advanceTime();
+    }
 
-    localStorage.setItem(`flag_${quiz.id}`, displayKeyword);
-    updateStamp();
+
+    // -----------------------------------------
+    // 回答判定
+    // -----------------------------------------
+    const rawValue = input.value.trim();
+    const userAnswer = rawValue.toUpperCase();
+
+    const correctAnswer =
+      (quiz.correctAnswer || "").toUpperCase();
+
+    const isCorrect =
+      (userAnswer === correctAnswer);
+
+    answers[quiz.id] = {
+      type: "text",
+      value: rawValue
+    };
+
+
+    // -----------------------------------------
+    // キーワード決定
+    // -----------------------------------------
+    const displayKeyword =
+      isCorrect
+        ? quiz.flag
+        : (quiz.dummyFlag || "不明");
+
+
+    // -----------------------------------------
+    // 結果表示
+    // -----------------------------------------
+    result.innerHTML =
+      `取得キーワード：<strong>${displayKeyword}</strong>`;
+
+
+    // -----------------------------------------
+    // キーワードをメモリに保持
+    // -----------------------------------------
+    flags[quiz.id] = displayKeyword;
+
+
+    // -----------------------------------------
+    // 各種表示を更新
+    // -----------------------------------------
+    updateStamp(quiz.id);
+    updateFinalButtonState();
     unlockNext(quiz);
   };
+
   container.appendChild(btn);
 
   return container;
 }
 
-// ===============================
-// 地図選択モード
-// ===============================
-function showMapSelection(quiz, result) {
-  if (typeof mapEngine !== "undefined") mapEngine.showMap();
 
-  const ui = document.getElementById("map-ui");
-  const uiText = document.getElementById("map-ui-text");
-  const uiYes = document.getElementById("map-ui-yes");
-  const uiNo = document.getElementById("map-ui-no");
-  const uiResult = document.getElementById("map-ui-result");
+// ===============================
+// ヒント設定
+// ===============================
+function setupHintsForQuiz(quiz, hintBox, hintBtn) {
 
-  // 既存イベント解除
-  if (window.pavilionMarkers) {
-    Object.values(window.pavilionMarkers).forEach(marker => marker.off("click"));
+  hintBox.innerHTML = "";
+
+  let step = 0;
+
+  // ヒントがない場合
+  if (!quiz.hints || quiz.hints.length === 0) {
+    hintBtn.style.display = "none";
+    return;
   }
 
-  // マーカークリック時の処理
-  Object.entries(window.pavilionMarkers || {}).forEach(([code, marker]) => {
-    marker.on("click", () => {
-      const pavilion = window.pavilionList.find(p => p.code === code);
-  
-      uiText.innerHTML = `
-        <div class="map-question">
-          <strong>問題：</strong>${quiz.question}
-        </div>
-        ${quiz.image ? `<img src="${quiz.image}" class="map-question-image">` : ""}
-        <p>対象データ：${pavilion.name}</p>
-        <p>この座標を記録しますか？</p>
-      `;
+  hintBtn.style.display = "block";
+  hintBtn.disabled = false;
+  hintBtn.textContent = "ヒントを見る";
 
-      uiResult.textContent = "";
-      ui.classList.add("show");
 
-      uiNo.onclick = () => {
-        ui.classList.remove("show");
-      };
+  hintBtn.onclick = () => {
 
-      uiYes.onclick = () => {
-        if (typeof advanceTime === "function") advanceTime();
+    if (step < quiz.hints.length) {
 
-        const isCorrect = (code === quiz.correctPavilion);
+      const p = document.createElement("p");
 
-        if (isCorrect) {
-          const displayKeyword = quiz.flag;
-          result.innerHTML = `取得キーワード：<strong>${displayKeyword}</strong>`;
-          uiResult.innerHTML = `アーカイブを更新：<strong>${displayKeyword}</strong>`;
-          
-          localStorage.setItem(`flag_${quiz.id}`, displayKeyword);
-          updateStamp();
-          unlockNext(quiz);
+      p.innerHTML =
+        `<strong>ヒント:</strong> ${quiz.hints[step]}`;
 
-          setTimeout(() => {
-            ui.classList.remove("show");
-            if (typeof mapEngine !== "undefined") mapEngine.hideMap();
-          }, 1500);
+      hintBox.appendChild(p);
 
-        } else {
-          // 段階ヒントの処理（システムエラー風の演出に変更）
-          const key = `hint_${quiz.id}`;
-          let step = parseInt(localStorage.getItem(key) || "0");
+      step++;
 
-          if (quiz.hints && quiz.hints[step]) {
-            uiResult.textContent = "データ不一致。ログ：" + quiz.hints[step];
-            step++;
-            localStorage.setItem(key, step);
-          } else {
-            // ヒントが尽きた、または無い場合はダミーを掴ませて強制進行
-            const dummyWord = quiz.dummyFlag || "座標エラー";
-            result.innerHTML = `取得キーワード：<strong>${dummyWord}</strong>`;
-            uiResult.innerHTML = `代替データを取得：<strong>${dummyWord}</strong>`;
-            
-            localStorage.setItem(`flag_${quiz.id}`, dummyWord);
-            updateStamp();
-            unlockNext(quiz);
 
-            setTimeout(() => {
-              ui.classList.remove("show");
-              if (typeof mapEngine !== "undefined") mapEngine.hideMap();
-            }, 1500);
-          }
-        }
-      };
-    });
+      // すべてのヒントを表示した場合
+      if (step >= quiz.hints.length) {
+
+        hintBtn.textContent =
+          "ヒントは以上だよ";
+
+        hintBtn.disabled = true;
+      }
+    }
+  };
+}
+
+
+// ===============================
+// 大謎の文章を組み立てる
+//
+// quizzes.js の finalSentence に従って
+// キーワードと接続詞・文章を組み立てる
+// ===============================
+function buildFinalSentence(sentenceData, wrapKeywordsForHeader = false) {
+
+  if (!Array.isArray(sentenceData)) {
+    return "";
+  }
+
+  const flags = getGameFlags();
+
+  return sentenceData.map(item => {
+
+    // -----------------------------------------
+    // 固定テキスト
+    // -----------------------------------------
+    if (item.type === "text") {
+      return item.value || "";
+    }
+
+    // -----------------------------------------
+    // 隠し文字
+    // -----------------------------------------
+    if (item.type === "hidden") {
+      return `<span class="hidden-shirushi">${item.value || ""}</span>`;
+    }
+
+
+    // -----------------------------------------
+    // キーワード
+    // -----------------------------------------
+    if (item.type === "keyword") {
+
+      const keyword = flags[item.id] || "？";
+
+      if (wrapKeywordsForHeader) {
+        return `<span class="header-kw" data-kw-id="${item.id}">${keyword}</span>`;
+      }
+
+      return keyword;
+    }
+
+
+    return "";
+
+  }).join("");
+}
+
+
+// ===============================
+// 大謎の文章定義を取得
+// ===============================
+function getFinalSentenceData() {
+
+  const finalQuiz =
+    quizData.find(q => q.id === "final");
+
+  if (!finalQuiz) {
+    return null;
+  }
+
+  return finalQuiz.finalSentence || null;
+}
+
+
+// ===============================
+// 大謎の文章HTMLを組み立てる（共通参照）
+// ===============================
+function buildFinalSentenceHTML(wrapKeywordsForHeader = false) {
+  const sentenceData = getFinalSentenceData();
+  if (!sentenceData) {
+    return "";
+  }
+  return buildFinalSentence(sentenceData, wrapKeywordsForHeader);
+}
+
+
+// ===============================
+// 表示領域の背景色・文字色を取得して隠し文字「印」を設定
+// ===============================
+function getEffectiveBackgroundColor(el) {
+  let curr = el;
+  while (curr && curr.nodeType === 1) {
+    const bg = window.getComputedStyle(curr).backgroundColor;
+    if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") {
+      return bg;
+    }
+    curr = curr.parentElement;
+  }
+  return window.getComputedStyle(document.body).backgroundColor || "#ffffff";
+}
+
+function applyHiddenCharColor(container) {
+  if (!container || typeof window.getComputedStyle !== "function") return;
+  const hiddenNodes = container.querySelectorAll(".hidden-shirushi");
+  hiddenNodes.forEach(node => {
+    const targetBox = node.parentElement || container;
+    const bg = getEffectiveBackgroundColor(targetBox);
+    const keywordColor = window.getComputedStyle(targetBox).color || "#000000";
+
+    node.style.setProperty("--hidden-bg-color", bg);
+    node.style.setProperty("--hidden-selected-color", keywordColor);
   });
 }
 
-// ===============================
-// 名前選択モード（簡易版）※現状はコメントアウト扱いですが念のため更新
-// ===============================
-function showNameSelection(quiz, result) {
-  const modal = document.createElement("div");
-  modal.style.position = "fixed";
-  modal.style.top = "20%";
-  modal.style.left = "50%";
-  modal.style.transform = "translateX(-50%)";
-  modal.style.background = "#fff";
-  modal.style.padding = "20px";
-  modal.style.border = "2px solid #0077b6";
-  modal.style.zIndex = 2000;
-
-  const search = document.createElement("input");
-  search.placeholder = "パビリオン名で検索";
-  modal.appendChild(search);
-
-  const list = document.createElement("ul");
-  modal.appendChild(list);
-
-  function render(filter = "") {
-    list.innerHTML = "";
-    (window.pavilionList || [])
-      .filter(p => p.name.includes(filter))
-      .forEach(p => {
-        const li = document.createElement("li");
-        li.textContent = p.name;
-        li.style.cursor = "pointer";
-        li.onclick = () => {
-          document.body.removeChild(modal);
-          const isCorrect = (p.code === quiz.correctPavilion);
-          const displayKeyword = isCorrect ? quiz.flag : (quiz.dummyFlag || "不明");
-          
-          result.innerHTML = `取得キーワード：<strong>${displayKeyword}</strong>`;
-          localStorage.setItem(`flag_${quiz.id}`, displayKeyword);
-          updateStamp();
-          unlockNext(quiz);
-        };
-        list.appendChild(li);
-      });
+function getNodeIndexInParent(node) {
+  if (!node || !node.parentNode) return -1;
+  let idx = 0;
+  let sib = node.previousSibling;
+  while (sib) {
+    idx++;
+    sib = sib.previousSibling;
   }
-
-  search.oninput = () => render(search.value);
-  render();
-
-  document.body.appendChild(modal);
+  return idx;
 }
 
-// ===============================
-// スタンプ更新 ＆ 大謎プレビュー更新
-// ===============================
-function updateStamp() {
-  const stampList = document.getElementById("stamp-list");
-  if (!stampList) return;
-  
-  stampList.innerHTML = "";
+function doesRangeCoverHiddenNode(range, hiddenNode) {
+  if (!range || !hiddenNode || range.collapsed) return false;
 
+  const textNode = hiddenNode.firstChild && hiddenNode.firstChild.nodeType === 3
+    ? hiddenNode.firstChild
+    : null;
+  const targetNode = textNode || hiddenNode;
+
+  if (textNode) {
+    const len = textNode.textContent ? textNode.textContent.length : 0;
+    if (len === 0) return false;
+    if (range.endContainer === textNode && range.endOffset <= 0) return false;
+    if (range.startContainer === textNode && range.startOffset >= len) return false;
+  }
+
+  if (range.endContainer === hiddenNode && range.endOffset <= 0) return false;
+  if (range.startContainer === hiddenNode && range.startOffset >= hiddenNode.childNodes.length) return false;
+
+  const parent = hiddenNode.parentNode;
+  if (parent) {
+    const idx = getNodeIndexInParent(hiddenNode);
+    if (idx >= 0) {
+      if (range.endContainer === parent && range.endOffset <= idx) return false;
+      if (range.startContainer === parent && range.startOffset >= idx + 1) return false;
+    }
+  }
+
+  if (typeof range.intersectsNode === "function") {
+    try {
+      return range.intersectsNode(targetNode);
+    } catch (e) {
+      // Fallback below
+    }
+  }
+
+  if (
+    typeof document !== "undefined" &&
+    typeof document.createRange === "function" &&
+    typeof range.compareBoundaryPoints === "function" &&
+    typeof Range !== "undefined"
+  ) {
+    try {
+      const nodeRange = document.createRange();
+      nodeRange.selectNodeContents(targetNode);
+      const startsBeforeEnd = range.compareBoundaryPoints(Range.END_TO_START, nodeRange) < 0;
+      const endsAfterStart = range.compareBoundaryPoints(Range.START_TO_END, nodeRange) > 0;
+      return startsBeforeEnd && endsAfterStart;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
+function updateHiddenMarksRevealState(explicitRange) {
+  if (typeof document === "undefined" || typeof document.querySelectorAll !== "function") return;
+  const hiddenNodes = document.querySelectorAll(".hidden-shirushi");
+  if (!hiddenNodes || hiddenNodes.length === 0) return;
+
+  const ranges = [];
+  if (explicitRange) {
+    ranges.push(explicitRange);
+  } else if (typeof window.getSelection === "function") {
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+      for (let i = 0; i < selection.rangeCount; i++) {
+        ranges.push(selection.getRangeAt(i));
+      }
+    }
+  }
+
+  hiddenNodes.forEach(node => {
+    const isSelected = ranges.some(range => doesRangeCoverHiddenNode(range, node));
+    if (isSelected) {
+      node.classList.add("is-revealed");
+    } else {
+      node.classList.remove("is-revealed");
+    }
+  });
+}
+
+if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
+  document.addEventListener("selectionchange", () => {
+    updateHiddenMarksRevealState();
+  });
+}
+
+window.applyHiddenCharColor = applyHiddenCharColor;
+window.updateHiddenMarksRevealState = updateHiddenMarksRevealState;
+
+
+// ===============================
+// ヘッダーキーワードの発光アニメーション再実行
+// ===============================
+function triggerHeaderKeywordFlash(span) {
+  if (!span) return;
+
+  if (span._flashTimer) {
+    clearTimeout(span._flashTimer);
+    span._flashTimer = null;
+  }
+
+  span.classList.remove("kw-flash");
+  void span.offsetWidth;
+
+  const startAnim = () => {
+    span.classList.add("kw-flash");
+    span.onanimationend = () => {
+      span.classList.remove("kw-flash");
+      if (span._flashTimer) {
+        clearTimeout(span._flashTimer);
+        span._flashTimer = null;
+      }
+    };
+    span._flashTimer = setTimeout(() => {
+      span.classList.remove("kw-flash");
+      span._flashTimer = null;
+    }, 1400);
+  };
+
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(startAnim);
+  } else {
+    startAnim();
+  }
+}
+
+
+// ===============================
+// スタンプ更新
+// ＆ ステータスバー更新（変更時のみ発光演出）
+// ＆ 地図解析結果更新
+// ＆ 大謎プレビュー更新
+// ===============================
+function updateStamp(changedQuizId) {
+
+  const flags = getGameFlags();
+
+  const stampList =
+    document.getElementById("stamp-list");
+
+  const keywordList =
+    document.getElementById("game-keywords");
+
+  const mapKeywordList =
+    document.getElementById("map-analysis-keywords");
+
+
+  // -----------------------------------------
+  // スタンプリストを初期化
+  // -----------------------------------------
+  if (stampList) {
+    stampList.innerHTML = "";
+  }
+
+
+  // -----------------------------------------
+  // スタンプリストを更新
+  //
+  // スタンプは quizData の順番で表示
+  // -----------------------------------------
   quizData.forEach(q => {
-    const savedKeyword = localStorage.getItem(`flag_${q.id}`);
-    
-    // 1. スタンプリスト（左側や下側のUI）の更新
-    if (savedKeyword) {
-      const li = document.createElement("li");
-      li.innerHTML = savedKeyword; // HTML（●の色など）を反映
+
+    const savedKeyword = flags[q.id];
+
+    if (savedKeyword && stampList) {
+
+      const li =
+        document.createElement("li");
+
+      li.innerHTML = savedKeyword;
+
       stampList.appendChild(li);
     }
+  });
 
-    // 2. 大謎プレビューエリア（final-preview内）の更新
-    const previewSpan = document.getElementById(`pv-${q.id}`);
+
+  // -----------------------------------------
+  // ステータスバーのキーワード更新（変更された部分だけ発光）
+  // -----------------------------------------
+  const sentenceData = getFinalSentenceData();
+
+  if (keywordList && sentenceData) {
+    const existingSpans = keywordList.querySelectorAll
+      ? keywordList.querySelectorAll(".header-kw")
+      : [];
+
+    if (!existingSpans || existingSpans.length === 0) {
+      keywordList.innerHTML = "🔑 " + buildFinalSentence(sentenceData, true);
+      sentenceData.forEach(item => {
+        if (item.type === "keyword") {
+          const val = flags[item.id] || "？";
+          previousHeaderKeywords[item.id] = val;
+          if (changedQuizId && item.id === changedQuizId && flags[item.id]) {
+            const span = keywordList.querySelector(`.header-kw[data-kw-id="${item.id}"]`);
+            triggerHeaderKeywordFlash(span);
+          }
+        }
+      });
+    } else {
+      sentenceData.forEach(item => {
+        if (item.type !== "keyword") return;
+
+        const nextVal = flags[item.id] || "？";
+        const prevVal = previousHeaderKeywords[item.id];
+        const span = keywordList.querySelector(`.header-kw[data-kw-id="${item.id}"]`);
+
+        if (span && prevVal !== nextVal) {
+          span.innerHTML = nextVal;
+          previousHeaderKeywords[item.id] = nextVal;
+
+          if (changedQuizId && item.id === changedQuizId) {
+            triggerHeaderKeywordFlash(span);
+          }
+        }
+      });
+    }
+
+    applyHiddenCharColor(keywordList);
+  }
+
+
+  // -----------------------------------------
+  // 地図選択画面の解析結果を同期更新
+  // -----------------------------------------
+  if (mapKeywordList) {
+    mapKeywordList.innerHTML = buildFinalSentenceHTML(false);
+    applyHiddenCharColor(mapKeywordList);
+  }
+
+  const mapEl = document.getElementById("map");
+  if (
+    mapEl &&
+    mapEl.classList.contains("visible") &&
+    typeof mapEngine !== "undefined" &&
+    typeof mapEngine.updateMapLayout === "function"
+  ) {
+    mapEngine.updateMapLayout();
+  }
+
+
+  // -----------------------------------------
+  // 大謎プレビューを更新
+  //
+  // 通常キーワードは黒の太字、4つ目（q2）の黄色表示は維持
+  // -----------------------------------------
+  quizData.forEach(q => {
+
+    const savedKeyword = flags[q.id];
+
+    const previewSpan =
+      document.getElementById(`pv-${q.id}`);
+
     if (previewSpan) {
+
       if (savedKeyword) {
+
         previewSpan.innerHTML = savedKeyword;
-        previewSpan.style.color = "#0f0"; // 埋まったら色を変えるなどの演出
+        previewSpan.style.fontWeight = "bold";
+
+        if (q.id === "q2") {
+          previewSpan.style.color = savedKeyword.includes("#FFD700")
+            ? ""
+            : "#000000";
+        } else {
+          previewSpan.style.color = "#000000";
+        }
+
       } else {
+
         previewSpan.textContent = "？";
         previewSpan.style.color = "#777";
+        previewSpan.style.fontWeight = "normal";
       }
     }
   });
+
+  applyHiddenCharColor(document.getElementById("final-preview"));
+  updateHiddenMarksRevealState();
 }
+
 
 // ===============================
 // 次の問題を解放
 // ===============================
 function unlockNext(quiz) {
-  // 大謎等に到達した際の処理（仕様に合わせて調整してください）
+
+  // 大謎に到達した場合
   if (quiz.id === "final") {
+
     if (window.showGoodEndingStory) {
       window.showGoodEndingStory();
     }

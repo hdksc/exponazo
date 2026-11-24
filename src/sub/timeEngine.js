@@ -20,7 +20,10 @@ const GAME_OVER_HOUR = 21;
 // ステータス欄の更新
 function updateGameTimeDisplay() {
   const timeStr = `${gameHour}:${String(gameMinute).padStart(2, "0")}`;
-  document.getElementById("game-time").textContent = `🕒 ${timeStr}`;
+  const gameTimeEl = document.getElementById("game-time");
+  if (gameTimeEl) {
+    gameTimeEl.textContent = `🕒 ${timeStr}`;
+  }
 }
 
 // 時間を進める

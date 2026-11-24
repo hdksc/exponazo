@@ -9,11 +9,15 @@ const quizData = [
     category: "小謎",
     level: 1,
     title: "第1問",
-    question: "今回の万博から「55年前」に行われた大阪の万博。その会場に設置されていた、白い（一部黄色い部分もある）巨大なモニュメントはどんなポーズをしていた？",
+    question: "今回の万博から「55年前」に行われた大阪の万博。その会場に設置されていた、白い（一部赤や黄色い部分もある）巨大なモニュメントはどんなポーズをしていた？",
+        // ヒントボタンで出す補足情報
+    hints: [
+      "当時を知らない人は<br>白い巨大な万博モニュメント<br>について画像検索して確認してもいいよ",
+    ],
     options: [
       "両腕をあげる", 
       "片腕をあげる", 
-      "推しの子のアイドルポーズ", 
+      "頭の上でダブルピース", 
       "正座"
     ],
     // 選択肢と1対1で対応するキーワード配列
@@ -33,8 +37,11 @@ const quizData = [
     level: 1,
     title: "第2問",
     question: "その55年前の万博で「月の石」が展示されていた人気パビリオンは？",
+    hints: [
+      "「アポロ計画」で検索するとどこの国か分かるよ",
+    ],
     options: [
-      "<span style=\"color: red; font-weight: bold;\">イタリア</span>館", 
+      "<span style=\"color: blue; font-weight: bold;\">イタリア</span>館", 
       "<span style=\"color: #FFD700; font-weight: bold;\">アメリカ</span>館", 
       "日本館", 
       "<span style=\"color: green; font-weight: bold;\">イギリス</span>館"
@@ -56,20 +63,23 @@ const quizData = [
     level: 1,
     title: "第3問：",
     question: "万博会場にあったガンダム、大屋根リングにタッチしているように見えるミャクミャク、ウサイン・ボルト像に共通するポーズは？",
+    hints: [
+      "「ミャクミャクモニュメント　ワクワク」で画像検索してみよう",
+    ],
     options: [
+      "飛ぶ", 
       "手をあげる", 
       "走る", 
-      "飛ぶ", 
       "寝る"
     ],
     // 選択肢と1対1で対応するキーワード配列
     keywords: [
+      "とぶ", 
       "あげる", 
       "はしる", 
-      "とぶ", 
       "ねる"
     ],
-    correctIndex: 0, 
+    correctIndex: 1, 
     flag: "あげる",
     dummyFlag: ""
   },
@@ -83,21 +93,21 @@ const quizData = [
       <div class="riddle-container" style="line-height: 1.6;">
         <span style="color: red;">フランス</span><br>
         <span style="color: green;">イギリス</span><br>
-        <span style="color: gray;">中国</span><br>
+        <span style="color: #ff69b4;">中国</span><br>
         <span style="color: blue;">イタリア</span><br>
-        <span style="color: brown;">ヨーロッパ</span><br>
         <br>
-        <span style="color: red;">←</span> ＝ 人<br>
-        <span style="color: green;">↑</span> ＝ 草<br>
-        <span style="color: gray;">○</span> ＝ 中<br>
-        <span style="color: blue;">←</span> ＝ ②<br>
+<span style="color: red; font-weight: bold;">←</span>
+ ＝ 人<br>
+        <span style="color: green; font-weight: bold">↑</span> ＝ 草<br>
+        <span style="color: #ff69b4; font-weight: bold">●</span> ＝ 中<br>
+        <span style="color: blue; font-weight: bold">←</span> ＝ ②<br>
         ②に当てはまる漢字を答えよ
       </div>
     `,
     // ヒントボタンで出す補足情報
     hints: [
-      "色がついた言葉を漢字一文字（仏、英、中、伊、欧）に略してみましょう。",
-      "記号はその漢字の「パーツの場所」を指しています。例：仏の左側(←)は『人(にんべん)』です。"
+      "色がついた言葉を漢字一文字に略してみましょう。",
+      "記号はその漢字の「パーツの場所」を指しているよ。例：英の上側(↑)は『草(くさかんむり)』"
     ],
     correctAnswer: "人",
     explanation: `
@@ -117,21 +127,25 @@ const quizData = [
       <div class="riddle-container" style="line-height: 1.6;">
         <span style="color: red;">フランス</span><br>
         <span style="color: green;">イギリス</span><br>
-        <span style="color: gray;">中国</span><br>
+        <span style="color: #ff69b4;">中国</span><br>
         <span style="color: blue;">イタリア</span><br>
         <span style="color: brown;">ヨーロッパ</span><br>
         <br>
         <span style="color: red;">←</span> ＝ 人<br>
         <span style="color: green;">↑</span> ＝ 草<br>
-        <span style="color: gray;">○</span> ＝ 中<br>
+        <span style="color: #ff69b4;">●</span> ＝ 中<br>
         <span style="color: blue;">←</span> ＝ ②<br>
-        <br>
         ※① ＝ <span style="color: brown;">←</span><br>
         <br>
-        <strong>ヒント：※コ＝メ</strong><br>
-        ※(米印)はコとメを入れ替える記号です
+        <strong>ルール：</strong>
+        ※(米印)はコとメを入れ替える記号
         <br>
-        ①②に当てはまる漢字を答えよ
+        ※コ＝メ<br>
+        が成立するとき
+        <br>
+        <br>
+        ①と②に当てはまる漢字を並べてできた単語「①②」を答えよ<br>
+        (②は第4問の答えと同じ)
       </div>
     `,
     // ヒントボタンで出す補足情報
@@ -159,6 +173,10 @@ const quizData = [
       タイパビリオンの前に飾られていた木彫りの動物のモニュメントは「▲□の▲□」<br><br>
       ▲□をひらがな二文字で答えよ。
     `,
+        hints: [
+      "コートジボワールにもあったかも",
+      "タイパビリオン前、でググって画像を見てみよう",
+    ],
     correctAnswer: "ぞう",
     flag: "ぞう",
     dummyFlag: "エラー"
@@ -171,39 +189,57 @@ const quizData = [
     title: "第7問",
     question: "1970年と2025年の万博に展示されて話題を呼んだ未来の家電機器は何でしょう？<br>○○○○にあたる部分をひらがな四文字で入力せよ。<br><br>人間○○○○機<br>ヒント:まるごと○○○○",
     correctAnswer: "せんたく",
-    flag: "せんたく",
+    flag: "まるごとせんたく",
     dummyFlag: "エラー"
   },
 
   {
-    id: "final",
-    category: "大謎",
-    level: 2,
-    title: "最終問題",
-    question: `
-      <strong>【僕はどこにいる？】</strong><br><br>
-      これまでに取得したキーワードを並べると、ある光景が浮かびあがる<br><br>
-      <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; text-align: center; font-size: 1.2em; font-weight: bold;">
-        [ q4 ] の [ q5 ] が<br>
-        [ q1 ] で<br>
-        [ q2 ] を [ q3 ]<br>
-        [ q6 ]
-      </div>
-      <br>
-      <strong>【現在の解析結果】</strong><br>
-      <div id="final-preview" style="background: #333; color: #0f0; padding: 15px; border-radius: 8px; font-family: monospace; min-height: 3em;">
-        <!-- ここにキーワードが自動挿入される -->
-        <span id="pv-q4">？</span> の <span id="pv-q5">？</span> が <span id="pv-q1">？</span> で <span id="pv-q2">？</span> を <span id="pv-q3">？</span> <span id="pv-q6">？</span>
-      </div>
-      <br>
-      導き出された場所を地図から選択せよ。
-    `,
-    mapQuestion: true,
-    correctPavilion: "yumeshima_station",
-    flag: "真実の解放",
-    hints: [
-      "ヒント1",
-      "ヒント2"
-    ]
-  }
+  id: "final",
+  category: "大謎",
+  level: 2,
+  title: "最終問題",
+
+  question: `
+    <strong>【僕はどこにいる？】</strong><br><br>
+    これまでに取得したキーワードを並べると、ある光景が浮かびあがる<br><br>
+
+    <strong>【現在の解析結果】</strong><br>
+    <div id="final-preview">
+      <span id="pv-q4">？</span> の
+      <span id="pv-q5">？</span> が
+      <span id="pv-q1">？</span> で
+      <span id="pv-q2">？</span> を
+      <span id="pv-q3">？</span>
+      <span id="pv-q6">？</span><span id="pv-hidden-shirushi" class="hidden-shirushi">印</span>
+    </div>
+
+    <br>
+    導き出された場所を地図から選択せよ。
+  `,
+
+  // 大謎で使用する文章の構造
+  finalSentence: [
+    { type: "keyword", id: "q4" },
+    { type: "text", value: " の " },
+
+    { type: "keyword", id: "q5" },
+    { type: "text", value: " が " },
+
+    { type: "keyword", id: "q1" },
+    { type: "text", value: " で " },
+
+    { type: "keyword", id: "q2" },
+    { type: "text", value: " を " },
+
+    { type: "keyword", id: "q3" },
+    { type: "text", value: " " },
+
+    { type: "keyword", id: "q6" },
+    { type: "hidden", value: "印" }
+  ],
+
+  mapQuestion: true,
+  correctPavilion: "yumeshima_station",
+  flag: "ゴール"
+}
 ];

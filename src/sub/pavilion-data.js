@@ -172,6 +172,7 @@ window.pavilionList.push(
   { code: 'W07', name: 'GUNDAM', lat: 34.65125, lng: 135.37994, bookable: true, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' },
   { code: 'W09', name: 'PASONA', lat: 34.65014, lng: 135.37916, bookable: true, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' },
   { code: 'W10', name: 'よしもと waraii myraii館', lat: 34.65017, lng: 135.37971, bookable: true, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' },
-  { code: 'W00', name: '西ゲート', lat: 34.65174, lng: 135.37710, bookable: false, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' }
+  { code: 'W00', name: '西ゲート', lat: 34.65174, lng: 135.37710, bookable: false, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' },
+  { id: 'yumeshima_station', code: 'yumeshima_station', name: '夢洲駅', lat: 34.6518886, lng: 135.3894573, bookable: false, unofficial_url: '', official_url: 'https://www.expo2025.or.jp/' }
 );
 
